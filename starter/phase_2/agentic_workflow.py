@@ -156,38 +156,74 @@ routing_agent = RoutingAgent(openai_api_key, [
     },
 ])
 
+# Output file for captured terminal output
+OUTPUT_FILENAME = "agentic_workflow_output.txt"
+
+
+class Tee:
+    """Write to both stdout and a file so terminal output is captured for submission."""
+
+    def __init__(self, file_handle, stdout_handle):
+        self.file = file_handle
+        self.stdout = stdout_handle
+
+    def write(self, data):
+        self.stdout.write(data)
+        self.file.write(data)
+        self.file.flush()
+
+    def flush(self):
+        self.stdout.flush()
+        self.file.flush()
+
+    def isatty(self):
+        return getattr(self.stdout, "isatty", lambda: False)()
+
+
 # Run the workflow when script is executed (not when imported)
 if __name__ == "__main__":
-    print("\n*** Workflow execution started ***\n")
-    # Workflow Prompt
-    workflow_prompt = "What would the development tasks for this product be?"
-    print(f"Task to complete in this workflow, workflow prompt = {workflow_prompt}")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, OUTPUT_FILENAME)
 
-    print("\nDefining workflow steps from the workflow prompt")
-    # Implement the workflow
-    workflow_steps = action_planning_agent.extract_steps_from_prompt(workflow_prompt)
-    completed_steps = []
+    with open(output_path, "w", encoding="utf-8") as out_file:
+        tee = Tee(out_file, sys.stdout)
+        original_stdout = sys.stdout
+        sys.stdout = tee
+        try:
+            print("\n*** Workflow execution started ***\n")
+            # Workflow Prompt
+            workflow_prompt = "What would the development tasks for this product be?"
+            print(f"Task to complete in this workflow, workflow prompt = {workflow_prompt}")
 
-    for i, step in enumerate(workflow_steps, 1):
-        print(f"\n--- Step {i}: {step} ---")
-        result = routing_agent.route(step)
-        completed_steps.append(result)
-        print(f"Result:\n{result}")
+            print("\nDefining workflow steps from the workflow prompt")
+            # Implement the workflow
+            workflow_steps = action_planning_agent.extract_steps_from_prompt(workflow_prompt)
+            completed_steps = []
 
-    print("\n*** Workflow execution completed ***")
+            for i, step in enumerate(workflow_steps, 1):
+                print(f"\n--- Step {i}: {step} ---")
+                result = routing_agent.route(step)
+                completed_steps.append(result)
+                print(f"Result:\n{result}")
 
-    # Produce a final, structured output for the Email Router project
-    if completed_steps and workflow_steps:
-        print("\n" + "=" * 60)
-        print("FINAL, STRUCTURED OUTPUT: Email Router Project Plan")
-        print("(Comprehensively planned project per product specification)")
-        print("=" * 60)
-        for i, (step_name, step_output) in enumerate(zip(workflow_steps, completed_steps), 1):
-            print(f"\n--- {i}. {step_name} ---\n")
-            print(step_output)
-        print("\n" + "=" * 60)
-        print("END OF EMAIL ROUTER PROJECT PLAN")
-        print("=" * 60)
-    elif completed_steps:
-        print("\n--- Final output of the workflow (last completed step) ---")
-        print(completed_steps[-1])
+            print("\n*** Workflow execution completed ***")
+
+            # Produce a final, structured output for the Email Router project
+            if completed_steps and workflow_steps:
+                print("\n" + "=" * 60)
+                print("FINAL, STRUCTURED OUTPUT: Email Router Project Plan")
+                print("(Comprehensively planned project per product specification)")
+                print("=" * 60)
+                for i, (step_name, step_output) in enumerate(zip(workflow_steps, completed_steps), 1):
+                    print(f"\n--- {i}. {step_name} ---\n")
+                    print(step_output)
+                print("\n" + "=" * 60)
+                print("END OF EMAIL ROUTER PROJECT PLAN")
+                print("=" * 60)
+            elif completed_steps:
+                print("\n--- Final output of the workflow (last completed step) ---")
+                print(completed_steps[-1])
+        finally:
+            sys.stdout = original_stdout
+
+    print(f"\nOutput saved to: {output_path}")

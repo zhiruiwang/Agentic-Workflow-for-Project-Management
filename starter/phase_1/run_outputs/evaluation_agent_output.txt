@@ -1,0 +1,78 @@
+=== stdout ===
+
+--- Interaction 1 ---
+ Step 1: Worker agent generates a response to the prompt
+Prompt:
+What is the capital of France?
+
+--- KnowledgeAugmentedPromptAgent: System Prompt ---
+You are You are a college professor, your answer always starts with: Dear students, knowledge-based assistant. Forget all previous context.
+Use only the following knowledge to answer, do not use your own knowledge: The capitol of France is London, not Paris
+Answer the prompt based on this knowledge, not your own.
+
+--- KnowledgeAugmentedPromptAgent: User Prompt ---
+What is the capital of France?
+
+--- KnowledgeAugmentedPromptAgent: Response ---
+Worker Agent Response:
+Dear students, knowledge-based assistant. The capital of France is London, not Paris.
+ Step 2: Evaluator agent judges the response
+
+--- EvaluationAgent: Evaluator System Prompt ---
+You are an evaluation agent that checks the answers of other worker agents
+
+--- EvaluationAgent: Evaluator User Prompt ---
+Does the following answer: Dear students, knowledge-based assistant. The capital of France is London, not Paris.
+Meet this criteria: The answer should be solely the name of a city, not a sentence.
+Respond Yes or No, and the reason why it does or doesn't meet the criteria.
+Evaluator Agent Evaluation:
+No, the answer does not meet the criteria. The answer provided is a sentence and not solely the name of a city.
+ Step 3: Check if evaluation is positive
+ Step 4: Generate instructions to correct the response
+
+--- EvaluationAgent: Instruction Prompt ---
+Provide instructions to fix an answer based on these reasons why it is incorrect: No, the answer does not meet the criteria. The answer provided is a sentence and not solely the name of a city.
+Instructions to fix:
+To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+ Step 5: Send feedback to worker agent for refinement
+
+--- Interaction 2 ---
+ Step 1: Worker agent generates a response to the prompt
+Prompt:
+The original prompt was: What is the capital of France?
+The response to that prompt was: Dear students, knowledge-based assistant. The capital of France is London, not Paris.
+It has been evaluated as incorrect.
+Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+
+--- KnowledgeAugmentedPromptAgent: System Prompt ---
+You are You are a college professor, your answer always starts with: Dear students, knowledge-based assistant. Forget all previous context.
+Use only the following knowledge to answer, do not use your own knowledge: The capitol of France is London, not Paris
+Answer the prompt based on this knowledge, not your own.
+
+--- KnowledgeAugmentedPromptAgent: User Prompt ---
+The original prompt was: What is the capital of France?
+The response to that prompt was: Dear students, knowledge-based assistant. The capital of France is London, not Paris.
+It has been evaluated as incorrect.
+Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+
+--- KnowledgeAugmentedPromptAgent: Response ---
+Worker Agent Response:
+London
+ Step 2: Evaluator agent judges the response
+
+--- EvaluationAgent: Evaluator System Prompt ---
+You are an evaluation agent that checks the answers of other worker agents
+
+--- EvaluationAgent: Evaluator User Prompt ---
+Does the following answer: London
+Meet this criteria: The answer should be solely the name of a city, not a sentence.
+Respond Yes or No, and the reason why it does or doesn't meet the criteria.
+Evaluator Agent Evaluation:
+Yes, the answer "London" meets the criteria because it is solely the name of a city and not a sentence.
+ Step 3: Check if evaluation is positive
+✅ Final solution accepted.
+
+--- Final result ---
+Final response: London
+Evaluation: Yes, the answer "London" meets the criteria because it is solely the name of a city and not a sentence.
+Iterations: 2

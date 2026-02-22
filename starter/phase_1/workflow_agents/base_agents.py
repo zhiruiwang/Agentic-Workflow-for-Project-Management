@@ -17,6 +17,8 @@ class DirectPromptAgent:
 
     def respond(self, prompt):
         """Generate a response using the OpenAI API."""
+        print("\n--- DirectPromptAgent: Prompt ---")
+        print(prompt)
         client = OpenAI(base_url="https://openai.vocareum.com/v1", api_key=self.openai_api_key)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -25,6 +27,7 @@ class DirectPromptAgent:
             ],
             temperature=0
         )
+        print("\n--- DirectPromptAgent: Response ---")
         return response.choices[0].message.content
         
 # AugmentedPromptAgent class definition
@@ -38,15 +41,21 @@ class AugmentedPromptAgent:
 
     def respond(self, input_text):
         """Generate a response using OpenAI API."""
+        system_content = f"{self.persona} Forget all previous context."
+        print("\n--- AugmentedPromptAgent: System Prompt ---")
+        print(system_content)
+        print("\n--- AugmentedPromptAgent: User Prompt ---")
+        print(input_text)
         client = OpenAI(base_url="https://openai.vocareum.com/v1", api_key=self.openai_api_key)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": f"{self.persona} Forget all previous context."},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": input_text}
             ],
             temperature=0
         )
+        print("\n--- AugmentedPromptAgent: Response ---")
         return response.choices[0].message.content
 
 # KnowledgeAugmentedPromptAgent class definition
@@ -67,6 +76,10 @@ class KnowledgeAugmentedPromptAgent:
             f"Use only the following knowledge to answer, do not use your own knowledge: {self.knowledge}\n"
             "Answer the prompt based on this knowledge, not your own."
         )
+        print("\n--- KnowledgeAugmentedPromptAgent: System Prompt ---")
+        print(system_content)
+        print("\n--- KnowledgeAugmentedPromptAgent: User Prompt ---")
+        print(input_text)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -75,6 +88,7 @@ class KnowledgeAugmentedPromptAgent:
             ],
             temperature=0
         )
+        print("\n--- KnowledgeAugmentedPromptAgent: Response ---")
         return response.choices[0].message.content
 
 # RAGKnowledgePromptAgent class definition
@@ -146,7 +160,12 @@ class RAGKnowledgePromptAgent:
         text = re.sub(r'\s+', ' ', text).strip()
 
         if len(text) <= self.chunk_size:
-            return [{"chunk_id": 0, "text": text, "chunk_size": len(text)}]
+            single_chunk = [{"chunk_id": 0, "text": text, "chunk_size": len(text)}]
+            with open(f"chunks-{self.unique_filename}", 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=["text", "chunk_size"])
+                writer.writeheader()
+                writer.writerow({"text": text, "chunk_size": len(text)})
+            return single_chunk
 
         chunks, start, chunk_id = [], 0, 0
 
@@ -177,18 +196,30 @@ class RAGKnowledgePromptAgent:
     def calculate_embeddings(self):
         """
         Calculates embeddings for each chunk and stores them in a CSV file.
+        Streams row-by-row to avoid loading all embeddings into memory (safe for constrained environments).
 
         Returns:
-        DataFrame: DataFrame containing text chunks and their embeddings.
+        None. Use find_prompt_in_knowledge() to query; embeddings are stored on disk.
         """
-        df = pd.read_csv(f"chunks-{self.unique_filename}", encoding='utf-8')
-        df['embeddings'] = df['text'].apply(self.get_embedding)
-        df.to_csv(f"embeddings-{self.unique_filename}", encoding='utf-8', index=False)
-        return df
+        chunks_path = f"chunks-{self.unique_filename}"
+        embeddings_path = f"embeddings-{self.unique_filename}"
+        with open(chunks_path, "r", encoding="utf-8", newline="") as f_in:
+            reader = csv.DictReader(f_in)
+            fieldnames = list(reader.fieldnames or ["text", "chunk_size"]) + ["embeddings"]
+            with open(embeddings_path, "w", encoding="utf-8", newline="") as f_out:
+                writer = csv.DictWriter(f_out, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in reader:
+                    text = row.get("text", "")
+                    emb = self.get_embedding(text)
+                    row["embeddings"] = str(emb)
+                    writer.writerow(row)
+        return None
 
     def find_prompt_in_knowledge(self, prompt):
         """
         Finds and responds to a prompt based on similarity with embedded knowledge.
+        Reads the embeddings CSV row-by-row (no pandas) to minimize memory use in constrained environments.
 
         Parameters:
         prompt (str): User input prompt.
@@ -197,22 +228,34 @@ class RAGKnowledgePromptAgent:
         str: Response derived from the most similar chunk in knowledge.
         """
         prompt_embedding = self.get_embedding(prompt)
-        df = pd.read_csv(f"embeddings-{self.unique_filename}", encoding='utf-8')
-        df['embeddings'] = df['embeddings'].apply(lambda x: np.array(eval(x)))
-        df['similarity'] = df['embeddings'].apply(lambda emb: self.calculate_similarity(prompt_embedding, emb))
+        best_sim = -1.0
+        best_chunk = ""
+        embeddings_path = f"embeddings-{self.unique_filename}"
+        with open(embeddings_path, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                emb = np.array(eval(row["embeddings"]))
+                sim = self.calculate_similarity(prompt_embedding, emb)
+                if sim > best_sim:
+                    best_sim = sim
+                    best_chunk = row["text"]
 
-        best_chunk = df.loc[df['similarity'].idxmax(), 'text']
-
+        system_content = f"You are {self.persona}, a knowledge-based assistant. Forget previous context."
+        user_content = f"Answer based only on this information: {best_chunk}. Prompt: {prompt}"
+        print("\n--- RAGKnowledgePromptAgent: System Prompt ---")
+        print(system_content)
+        print("\n--- RAGKnowledgePromptAgent: User Prompt ---")
+        print(user_content)
         client = OpenAI(base_url="https://openai.vocareum.com/v1", api_key=self.openai_api_key)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": f"You are {self.persona}, a knowledge-based assistant. Forget previous context."},
-                {"role": "user", "content": f"Answer based only on this information: {best_chunk}. Prompt: {prompt}"}
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": user_content}
             ],
             temperature=0
         )
-
+        print("\n--- RAGKnowledgePromptAgent: Response ---")
         return response.choices[0].message.content
 
 class EvaluationAgent:
@@ -249,6 +292,10 @@ class EvaluationAgent:
                 f"Meet this criteria: {self.evaluation_criteria}\n"
                 f"Respond Yes or No, and the reason why it does or doesn't meet the criteria."
             )
+            print("\n--- EvaluationAgent: Evaluator System Prompt ---")
+            print(self.persona)
+            print("\n--- EvaluationAgent: Evaluator User Prompt ---")
+            print(eval_prompt)
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -269,6 +316,8 @@ class EvaluationAgent:
                 instruction_prompt = (
                     f"Provide instructions to fix an answer based on these reasons why it is incorrect: {evaluation}"
                 )
+                print("\n--- EvaluationAgent: Instruction Prompt ---")
+                print(instruction_prompt)
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
@@ -313,6 +362,8 @@ class RoutingAgent:
 
     def route(self, user_input):
         """Route user prompt to the agent with the highest similarity to the prompt."""
+        print("\n--- RoutingAgent: User Input ---")
+        print(user_input)
         input_emb = self.get_embedding(user_input)
         input_emb = np.array(input_emb)
         best_agent = None
@@ -353,6 +404,10 @@ class ActionPlanningAgent:
             "Only return the steps in your knowledge. Forget any previous context. "
             f"This is your knowledge: {self.knowledge}"
         )
+        print("\n--- ActionPlanningAgent: System Prompt ---")
+        print(system_prompt)
+        print("\n--- ActionPlanningAgent: User Prompt ---")
+        print(prompt)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -362,6 +417,7 @@ class ActionPlanningAgent:
             temperature=0
         )
         response_text = response.choices[0].message.content or ""
+        print("\n--- ActionPlanningAgent: Response ---")
 
         steps = [s.strip() for s in response_text.split("\n") if s.strip()]
         return steps

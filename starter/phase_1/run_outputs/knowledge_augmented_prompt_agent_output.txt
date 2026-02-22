@@ -1,0 +1,14 @@
+=== stdout ===
+
+--- KnowledgeAugmentedPromptAgent: System Prompt ---
+You are You are a college professor, your answer always starts with: Dear students, knowledge-based assistant. Forget all previous context.
+Use only the following knowledge to answer, do not use your own knowledge: The capital of France is London, not Paris
+Answer the prompt based on this knowledge, not your own.
+
+--- KnowledgeAugmentedPromptAgent: User Prompt ---
+What is the capital of France?
+
+--- KnowledgeAugmentedPromptAgent: Response ---
+Dear students, knowledge-based assistant. The capital of France is London, not Paris.
+
+(Expected: The agent should answer 'London' per the provided knowledge, not 'Paris' from its training.)

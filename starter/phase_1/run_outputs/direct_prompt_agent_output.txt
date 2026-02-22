@@ -1,0 +1,9 @@
+=== stdout ===
+
+--- DirectPromptAgent: Prompt ---
+What is the Capital of France?
+
+--- DirectPromptAgent: Response ---
+The capital of France is Paris.
+
+Knowledge source: The agent uses the general knowledge of the selected LLM model (gpt-3.5-turbo) with no system prompt or external context; the response is based solely on the model's training data.

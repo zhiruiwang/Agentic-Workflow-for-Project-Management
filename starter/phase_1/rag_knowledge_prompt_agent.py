@@ -9,7 +9,9 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 persona = "You are a college professor, your answer always starts with: Dear students,"
-RAG_knowledge_prompt_agent = RAGKnowledgePromptAgent(openai_api_key, persona, 500, 200)
+# Single-chunk mode for constrained environments (e.g. Vocareum): one chunk = one embedding, minimal memory.
+# chunk_size larger than the knowledge text ensures the whole corpus is one chunk.
+RAG_knowledge_prompt_agent = RAGKnowledgePromptAgent(openai_api_key, persona, chunk_size=10000, chunk_overlap=0)
 
 knowledge_text = """
 In the historic city of Boston, Clara, a marine biologist and science communicator, began each morning analyzing sonar data to track whale migration patterns along the Atlantic coast.
