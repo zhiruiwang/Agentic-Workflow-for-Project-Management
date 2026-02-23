@@ -182,8 +182,11 @@ class RAGKnowledgePromptAgent:
                 "end_char": end
             })
 
-            start = end - self.chunk_overlap
             chunk_id += 1
+            if end >= len(text):
+                break
+            # Always advance start so the loop terminates (avoids infinite loop when overlap >= chunk length).
+            start = max(start + 1, end - self.chunk_overlap)
 
         with open(f"chunks-{self.unique_filename}", 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=["text", "chunk_size"])

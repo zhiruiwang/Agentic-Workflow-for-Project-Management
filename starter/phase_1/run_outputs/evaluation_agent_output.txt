@@ -33,7 +33,7 @@ No, the answer does not meet the criteria. The answer provided is a sentence and
 --- EvaluationAgent: Instruction Prompt ---
 Provide instructions to fix an answer based on these reasons why it is incorrect: No, the answer does not meet the criteria. The answer provided is a sentence and not solely the name of a city.
 Instructions to fix:
-To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary. For example, if the answer provided was "New York City is the largest city in the United States," the corrected answer would simply be "New York City."
  Step 5: Send feedback to worker agent for refinement
 
 --- Interaction 2 ---
@@ -42,7 +42,7 @@ Prompt:
 The original prompt was: What is the capital of France?
 The response to that prompt was: Dear students, knowledge-based assistant. The capital of France is London, not Paris.
 It has been evaluated as incorrect.
-Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary. For example, if the answer provided was "New York City is the largest city in the United States," the corrected answer would simply be "New York City."
 
 --- KnowledgeAugmentedPromptAgent: System Prompt ---
 You are You are a college professor, your answer always starts with: Dear students, knowledge-based assistant. Forget all previous context.
@@ -53,7 +53,7 @@ Answer the prompt based on this knowledge, not your own.
 The original prompt was: What is the capital of France?
 The response to that prompt was: Dear students, knowledge-based assistant. The capital of France is London, not Paris.
 It has been evaluated as incorrect.
-Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary.
+Make only these corrections, do not alter content validity: To fix the answer, provide only the name of a city that meets the criteria. Remove any additional information or sentences that are not necessary. For example, if the answer provided was "New York City is the largest city in the United States," the corrected answer would simply be "New York City."
 
 --- KnowledgeAugmentedPromptAgent: Response ---
 Worker Agent Response:

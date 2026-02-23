@@ -21,8 +21,6 @@ augmented_agent_response = augmented_agent.respond(prompt)
 # Print the agent's response
 print(augmented_agent_response)
 
-# Explanation:
-# - Knowledge: The agent uses the LLM's general knowledge to answer the factual question (capital of France),
-#   but the system prompt constrains how the answer is presented.
-# - Persona effect: The system prompt instructs the agent to assume a college professor persona and start
-#   with "Dear students," so the response is formatted as if addressing a class rather than as plain fact.
+# knowledge source and persona impact
+print("\nKnowledge source: The agent uses the LLM's general knowledge (e.g. gpt-3.5-turbo training data) to answer the factual question; no external knowledge document is provided. The system prompt only constrains how the answer is presented, not what facts are used.")
+print("Persona impact: The system prompt instructs the agent to assume a college professor persona and to start with 'Dear students,' so the response is formatted as if addressing a class rather than as plain fact.")
